@@ -26,5 +26,65 @@ import org.junit.runner.RunWith
 class RemindersLocalRepositoryTest {
 
 //    TODO: Add testing implementation to the RemindersLocalRepository.kt
+    private lateinit var database: RemindersDatabase
+    private lateinit var repository: RemindersLocalRepository
 
+    @get:Rule
+    val instantTaskExecutorRule = InstantTaskExecutorRule()
+
+    private fun getReminder(): ReminderDTO {
+        return ReminderDTO(
+            title = "title",
+            description = "description",
+            location = "location",
+            latitude = -34.0,
+            longitude = 151.0)
+    }
+
+    @Before
+    fun setup() {
+        database = Room.inMemoryDatabaseBuilder(
+            ApplicationProvider.getApplicationContext(),
+            RemindersDatabase::class.java
+        ).allowMainThreadQueries().build()
+
+        repository = RemindersLocalRepository(database.reminderDao(), Dispatchers.Main)
+    }
+
+    @After
+    fun cleanUp() {
+        database.close()
+    }
+
+    @Test
+    fun repository_saveReminder_getReminderById() = runBlocking {
+        // GIVEN - Insert a reminder via repository
+        val reminder = getReminder()
+        repository.saveReminder(reminder)
+
+        // WHEN  - Get reminder from repository
+        val result = repository.getReminder(reminder.id)
+
+        // THEN - Data loaded matches data inserted
+        assertThat(result is Result.Success, `is`(true))
+        result as Result.Success
+
+        assertThat(result.data.title, `is`(reminder.title))
+        assertThat(result.data.description, `is`(reminder.description))
+        assertThat(result.data.latitude, `is`(reminder.latitude))
+        assertThat(result.data.longitude, `is`(reminder.longitude))
+        assertThat(result.data.location, `is`(reminder.location))
+    }
+
+    @Test
+    fun repository_deleteAllReminders_getReminderById() = runBlocking {
+        // GIVEN - The repository has saved data
+        val reminder = getReminder()
+        repository.saveReminder(reminder)
+        // WHEN  - All reminders are deleted
+        repository.deleteAllReminders()
+        // THEN - No data has to match with any id and an error has to be returned
+        val result = repository.getReminder(reminder.id)
+        assertThat(result is Result.Error, `is`(true))
+    }
 }

@@ -1,16 +1,124 @@
 package com.udacity.project4.locationreminders.savereminder
 
+import android.os.Build
+import androidx.arch.core.executor.testing.InstantTaskExecutorRule
+import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.udacity.project4.R
+import com.udacity.project4.locationreminders.MainCoroutineRule
+import com.udacity.project4.locationreminders.data.FakeDataSource
+import com.udacity.project4.locationreminders.getOrAwaitValue
+import com.udacity.project4.locationreminders.reminderslist.ReminderDataItem
 
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.runBlocking
+import org.hamcrest.CoreMatchers
+import org.hamcrest.MatcherAssert
+import org.hamcrest.core.Is
+import org.junit.Before
+import org.junit.Rule
+import org.junit.Test
 import org.junit.runner.RunWith
+import org.koin.core.context.stopKoin
+import org.robolectric.annotation.Config
 
 @ExperimentalCoroutinesApi
+@Config(maxSdk = Build.VERSION_CODES.P)
 @RunWith(AndroidJUnit4::class)
 class SaveReminderViewModelTest {
 
 
     //TODO: provide testing to the SaveReminderView and its live data objects
+    @get:Rule
+    val instantTaskExecutorRule = InstantTaskExecutorRule()
 
+    @get:Rule
+    val mainCoroutineRule = MainCoroutineRule()
 
+    private lateinit var fakeRepo: FakeDataSource
+    private lateinit var saveReminderViewModel: SaveReminderViewModel
+
+    @Before
+    fun createRepository() {
+        stopKoin()
+
+        fakeRepo = FakeDataSource()
+        saveReminderViewModel = SaveReminderViewModel(
+            ApplicationProvider.getApplicationContext(),
+            fakeRepo
+        )
+        runBlocking { fakeRepo.deleteAllReminders() }
+
+    }
+
+    //TODO: provide testing to the SaveReminderView and its live data objects
+    private fun getReminder(): ReminderDataItem {
+        return ReminderDataItem(
+            title = "title",
+            description = "description",
+            location = "location",
+            latitude = -34.0,
+            longitude = 151.0
+        )
+    }
+
+    @Test
+    fun saveReminder() {
+        val reminder = getReminder()
+        saveReminderViewModel.saveReminder(reminder)
+        MatcherAssert.assertThat(
+            saveReminderViewModel.showToast.getOrAwaitValue(),
+            Is.`is`("Reminder Saved !")
+        )
+    }
+
+    @Test
+    fun saveReminder_withoutTitle() {
+        val reminder = ReminderDataItem(
+            title = "",
+            description = "description",
+            location = "location",
+            latitude = -34.0,
+            longitude = 151.0
+        )
+        saveReminderViewModel.validateAndSaveReminder(reminder)
+        MatcherAssert.assertThat(
+            saveReminderViewModel.showSnackBarInt.getOrAwaitValue(),
+            CoreMatchers.notNullValue()
+        )
+    }
+
+    @Test
+    fun showLoading() = runBlocking {
+        val reminder = getReminder()
+        mainCoroutineRule.pauseDispatcher()
+        saveReminderViewModel.validateAndSaveReminder(reminder)
+        MatcherAssert.assertThat(
+            saveReminderViewModel.showLoading.getOrAwaitValue(),
+            CoreMatchers.`is`(true)
+        )
+        mainCoroutineRule.resumeDispatcher()
+        MatcherAssert.assertThat(
+            saveReminderViewModel.showLoading.getOrAwaitValue(),
+            CoreMatchers.`is`(false)
+        )
+    }
+
+    @Test
+    fun saveReminder_withoutlocation() {
+
+        val reminder = ReminderDataItem(
+            title = "title",
+            description = "description",
+            location = "",
+            latitude = -34.0,
+            longitude = 151.0
+        )
+        saveReminderViewModel.validateAndSaveReminder(reminder)
+        MatcherAssert.assertThat(
+            saveReminderViewModel.showSnackBarInt.getOrAwaitValue(),
+            CoreMatchers.notNullValue()
+        )
+
+    }
 }

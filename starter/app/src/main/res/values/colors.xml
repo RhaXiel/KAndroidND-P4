@@ -5,4 +5,8 @@
     <color name="colorAccent">#D81B60</color>
     <color name="black">#000000</color>
     <color name="white">#ffffff</color>
+    <color name="geoFenceStroke">#009E03</color>
+    <color name="geoFenceFill">#801AFF00</color>
+
 </resources>
+
