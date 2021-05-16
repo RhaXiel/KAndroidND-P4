@@ -122,9 +122,9 @@ dependencies {
 
     // Firebase
     implementation platform("com.google.firebase:firebase-bom:$firebaseBomVersion")
-    implementation 'com.firebaseui:firebase-ui-auth:5.0.0'
+    implementation "com.firebaseui:firebase-ui-auth:$fireBaseUiAuthVersion"
 
-    implementation 'androidx.multidex:multidex:2.0.1'
+    implementation "androidx.multidex:multidex:$multidexVersion"
 
 }
 apply plugin: 'com.google.gms.google-services'

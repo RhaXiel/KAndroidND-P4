@@ -2,6 +2,7 @@ package com.udacity.project4.locationreminders.savereminder.selectreminderlocati
 
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.content.pm.PackageManager
 import android.content.res.Resources
 import android.location.Location
@@ -120,6 +121,7 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
         setPoiClick(map)
         //        TODO: add style to the map
         setMapStyle(map)
+
         //        TODO: call this function after the user confirms on the selected location
         onLocationSelected()
     }
@@ -161,14 +163,32 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
         }
     }
 
-    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>, grantResults: IntArray) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         if(requestCode == REQUEST_LOCATION_PERMISSION) {
             if(grantResults.isNotEmpty() && (grantResults.first() == PackageManager.PERMISSION_GRANTED)){
                 enableMyLocation()
             }
-        } else{
-            Toast.makeText(context, getString(R.string.permission_denied_explanation), Toast.LENGTH_LONG).show()
+            else{
+                Toast.makeText(context, getString(R.string.permission_denied_explanation), Toast.LENGTH_LONG).show()
+            }
         }
+    }
+
+    @SuppressLint("MissingPermission") //Permission checking is handled somewhere else
+    private fun zoomToCurrentLocation(){
+            map.isMyLocationEnabled = true
+            Toast.makeText(context, "Location permission is granted.", Toast.LENGTH_LONG).show()
+            fusedLocationClient.lastLocation
+                .addOnSuccessListener { location : Location? ->
+                    // Got last known location. In some rare situations this can be null.
+                    //        TODO: zoom to the user location after taking his permission
+                    if (location != null) {
+                        homeLatLng = LatLng(location.latitude, location.longitude)
+                        map.moveCamera(CameraUpdateFactory.newLatLngZoom(homeLatLng, DEFAULT_MAP_ZOOM_LEVEL))
+                        map.addMarker(MarkerOptions().position(homeLatLng))
+                    }
+                }
     }
 
     private fun enableMyLocation() {
@@ -180,24 +200,26 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
                         Manifest.permission.ACCESS_COARSE_LOCATION
                 ) != PackageManager.PERMISSION_GRANTED
         ) {
-            ActivityCompat.requestPermissions(
+            /*ActivityCompat.requestPermissions(
                     requireActivity(),
                     arrayOf(Manifest.permission.ACCESS_FINE_LOCATION),
                     REQUEST_LOCATION_PERMISSION
+            )*/
+            requestPermissions(
+                arrayOf(Manifest.permission.ACCESS_FINE_LOCATION),
+                REQUEST_LOCATION_PERMISSION
             )
-            return
+            //return
+        } /*else{
+            requestPermissions(
+                arrayOf(Manifest.permission.ACCESS_FINE_LOCATION),
+                REQUEST_LOCATION_PERMISSION
+            )
+        }*/
+        if(ActivityCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED){
+            zoomToCurrentLocation()
+            Log.e("Select location", "Zoom to current location")
         }
-        map.isMyLocationEnabled = true
-        fusedLocationClient.lastLocation
-                .addOnSuccessListener { location : Location? ->
-                    // Got last known location. In some rare situations this can be null.
-                    //        TODO: zoom to the user location after taking his permission
-                    if (location != null) {
-                        homeLatLng = LatLng(location.latitude, location.longitude)
-                        map.moveCamera(CameraUpdateFactory.newLatLngZoom(homeLatLng, DEFAULT_MAP_ZOOM_LEVEL))
-                        map.addMarker(MarkerOptions().position(homeLatLng))
-                    }
-                }
     }
 
 }
