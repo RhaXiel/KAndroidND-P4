@@ -7,6 +7,7 @@ import android.content.pm.PackageManager
 import android.content.res.Resources
 import android.location.Location
 import android.os.Bundle
+import android.os.Looper
 import android.util.Log
 import android.view.*
 import android.widget.Toast
@@ -186,9 +187,31 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
                     if (location != null) {
                         homeLatLng = LatLng(location.latitude, location.longitude)
                         map.moveCamera(CameraUpdateFactory.newLatLngZoom(homeLatLng, DEFAULT_MAP_ZOOM_LEVEL))
-                        map.addMarker(MarkerOptions().position(homeLatLng))
+                        //map.addMarker(MarkerOptions().position(homeLatLng))
+                    } else {
+                        requestNewLocationData {
+                            homeLatLng = LatLng(it.latitude, it.longitude)
+                            map.moveCamera(CameraUpdateFactory.newLatLngZoom(homeLatLng, DEFAULT_MAP_ZOOM_LEVEL))
+                            //map.addMarker(MarkerOptions().position(homeLatLng))
+                        }
                     }
                 }
+    }
+
+    @SuppressLint("MissingPermission")
+    private fun requestNewLocationData(locationListener: (Location) -> Unit) {
+        val locationCallback: LocationCallback = object : LocationCallback() {
+            override fun onLocationResult(locationResult: LocationResult) {
+                locationListener.invoke(locationResult.lastLocation)
+            }
+        }
+        with(LocationRequest()) {
+            priority = LocationRequest.PRIORITY_HIGH_ACCURACY
+            interval = 0
+            fastestInterval = 0
+            numUpdates = 1
+            fusedLocationClient.requestLocationUpdates(this, locationCallback, Looper.myLooper())
+        }
     }
 
     private fun enableMyLocation() {

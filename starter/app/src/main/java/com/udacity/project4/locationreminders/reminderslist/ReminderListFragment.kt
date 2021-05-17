@@ -1,14 +1,17 @@
 package com.udacity.project4.locationreminders.reminderslist
 
 import android.content.Intent
+import android.os.Build
 import android.os.Bundle
 import android.view.*
+import android.widget.Toast
 import androidx.databinding.DataBindingUtil
 import androidx.navigation.findNavController
 import androidx.navigation.fragment.findNavController
 import androidx.navigation.ui.NavigationUI
 import com.firebase.ui.auth.AuthUI
 import com.udacity.project4.R
+import com.udacity.project4.authentication.AuthenticationActivity
 import com.udacity.project4.base.BaseFragment
 import com.udacity.project4.base.NavigationCommand
 import com.udacity.project4.databinding.FragmentRemindersBinding
@@ -27,11 +30,8 @@ class ReminderListFragment : BaseFragment() {
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
-        binding =
-            DataBindingUtil.inflate(
-                inflater,
-                R.layout.fragment_reminders, container, false
-            )
+        binding = FragmentRemindersBinding.inflate(inflater, container, false)
+
         binding.viewModel = _viewModel
 
         setHasOptionsMenu(true)
@@ -81,7 +81,20 @@ class ReminderListFragment : BaseFragment() {
             R.id.logout -> {
 //                TODO: add the logout implementation
                 AuthUI.getInstance().signOut(requireContext()).addOnCompleteListener {
-                    findNavController().navigate(R.id.authenticationActivity)
+                    if (it.isSuccessful) {
+                        // Finish activity and navigate.
+                        val intent = Intent(context?.applicationContext, AuthenticationActivity::class.java)
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP){
+                            requireActivity().finishAndRemoveTask()
+                        }else{
+                            requireActivity().finish()
+                        }
+                        startActivity(intent)
+                    } else {
+                        // Show an error message.
+                        Toast.makeText(context, getString(R.string.logout_error), Toast.LENGTH_LONG).show()
+                    }
+
                 }
             }
         }
